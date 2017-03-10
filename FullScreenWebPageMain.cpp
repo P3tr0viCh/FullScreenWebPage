@@ -10,24 +10,27 @@
 #include <UtilsStr.h>
 #include <UtilsFileIni.h>
 #include <UtilsMisc.h>
-
 // ---------------------------------------------------------------------------
+
 #pragma package(smart_init)
 #pragma link "SHDocVw_OCX"
 #pragma resource "*.dfm"
+// ---------------------------------------------------------------------------
 
 TMain *Main;
-
 // ---------------------------------------------------------------------------
+
 __fastcall TMain::TMain(TComponent* Owner) : TForm(Owner) {
 }
-
 // ---------------------------------------------------------------------------
+
 void __fastcall TMain::miMainCloseClick(TObject *Sender) {
 	Close();
 }
+// ---------------------------------------------------------------------------
 
 WNDPROC OldPopupWndProc;
+// ---------------------------------------------------------------------------
 
 LRESULT CALLBACK PopupWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -41,8 +44,8 @@ LRESULT CALLBACK PopupWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	}
 	return CallWindowProc(OldPopupWndProc, hWnd, msg, wParam, lParam);
 }
-
 // ---------------------------------------------------------------------------
+
 void __fastcall TMain::FormCreate(TObject *Sender) {
 	UpdateFeatureBrowserEmulation();
 
@@ -52,7 +55,11 @@ void __fastcall TMain::FormCreate(TObject *Sender) {
 
 	bool HideCursor = FileIni->ReadBool("Settings", "HideCursor", true);
 
+	CompatibleEdge = FileIni->ReadBool("Settings", "CompatibleEdge", false);
+
 	delete FileIni;
+
+	Fullscreen = true;
 
 	if (IsEmpty(Url)) {
 		// TODO
@@ -80,8 +87,8 @@ void __fastcall TMain::FormCreate(TObject *Sender) {
 	OldPopupWndProc = (WNDPROC)SetWindowLong(PopupList->Window, GWL_WNDPROC,
 		(LONG)PopupWndProc);
 }
-
 // ---------------------------------------------------------------------------
+
 void __fastcall TMain::FormDestroy(TObject *Sender) {
 	SetWindowLong(PopupList->Window, GWL_WNDPROC, (LONG)OldPopupWndProc);
 
@@ -89,32 +96,35 @@ void __fastcall TMain::FormDestroy(TObject *Sender) {
 		DocHandler->Release();
 	}
 }
-
 // ---------------------------------------------------------------------------
+
 void __fastcall TMain::CppWebBrowserTitleChange(TObject *Sender, BSTR Text) {
 	Caption = Text;
 }
-
 // ---------------------------------------------------------------------------
+
 void __fastcall TMain::miMainAboutClick(TObject *Sender) {
 	DisableHideCursor = true;
 
+	Fullscreen = false;
+	
 	ShowAbout(14, 0);
 
 	DisableHideCursor = false;
 }
-
 // ---------------------------------------------------------------------------
+
 void __fastcall TMain::TimerHideCursorTimer(TObject *Sender) {
 	TimerHideCursor->Enabled = false;
 	Screen->Cursor = crNone;
 }
-
 // ---------------------------------------------------------------------------
+
 void __fastcall TMain::FormMouseMove(TObject *Sender, TShiftState Shift, int X,
 	int Y) {
 	MouseMoveEvent();
 }
+// ---------------------------------------------------------------------------
 
 void TMain::MouseMoveEvent() {
 	if (DisableHideCursor) {
@@ -123,8 +133,8 @@ void TMain::MouseMoveEvent() {
 	Screen->Cursor = crDefault;
 	TimerHideCursor->Enabled = true;
 }
-
 // ---------------------------------------------------------------------------
+
 void __fastcall TMain::CppWebBrowserDocumentComplete(TObject *Sender,
 	LPDISPATCH pDisp, Variant *URL) {
 	IHTMLDocument2 *lpHtmlDocument = NULL;
@@ -141,10 +151,10 @@ void __fastcall TMain::CppWebBrowserDocumentComplete(TObject *Sender,
 
 	lpHtmlDocument->Release();
 }
-
 // ---------------------------------------------------------------------------
-void __fastcall TMain::SetDisableHideCursor(bool val) {
-	_DisableHideCursor = val;
+
+void __fastcall TMain::SetDisableHideCursor(bool Value) {
+	_DisableHideCursor = Value;
 
 	if (_DisableHideCursor) {
 		TimerHideCursor->Enabled = false;
@@ -154,10 +164,46 @@ void __fastcall TMain::SetDisableHideCursor(bool val) {
 		TimerHideCursor->Enabled = true;
 	}
 }
-
 // ---------------------------------------------------------------------------
+
 bool __fastcall TMain::GetDisableHideCursor() {
 	return _DisableHideCursor;
+}
+// ---------------------------------------------------------------------------
+
+// Left, Right, Top, Bottom
+const int TMain::FormEdges[][4] = { {0, 0, 0, 0}, {2, 2, 2, 2}};
+// ---------------------------------------------------------------------------
+
+void __fastcall TMain::SetFullscreen(bool Value) {
+	_Fullscreen = Value;
+
+	miMainFullscreen->Checked = _Fullscreen;
+
+	if (_Fullscreen) {
+		FormStyle = fsStayOnTop;
+
+		BorderStyle = bsNone;
+
+		SetBounds(-FormEdges[CompatibleEdge][LeftEdge],
+			-FormEdges[CompatibleEdge][TopEdge],
+			Screen->Width + FormEdges[CompatibleEdge][LeftEdge] +
+			FormEdges[CompatibleEdge][RightEdge],
+			Screen->Height + FormEdges[CompatibleEdge][TopEdge] +
+			FormEdges[CompatibleEdge][BottomEdge]);
+	}
+	else {
+		FormStyle = fsNormal;
+
+		BorderStyle = bsSizeable;
+
+		SetBounds(100, 100, Screen->Width - 200, Screen->Height - 200);
+	}
+}
+// ---------------------------------------------------------------------------
+
+bool __fastcall TMain::GetFullscreen() {
+	return _Fullscreen;
 }
 // ---------------------------------------------------------------------------
 
@@ -203,6 +249,7 @@ int GetIEVersion() {
 		return -1;
 	}
 }
+// ---------------------------------------------------------------------------
 
 void WriteFeatureBrowserEmulation(int Version) {
 	TRegistry *reg = new TRegistry();
@@ -220,6 +267,7 @@ void WriteFeatureBrowserEmulation(int Version) {
 		delete reg;
 	}
 }
+// ---------------------------------------------------------------------------
 
 void TMain::UpdateFeatureBrowserEmulation() {
 	int Version = GetIEVersion();
@@ -251,3 +299,28 @@ void TMain::UpdateFeatureBrowserEmulation() {
 		WriteFeatureBrowserEmulation(EmulatedVersion);
 	}
 }
+// ---------------------------------------------------------------------------
+
+void __fastcall TMain::miMainFullscreenClick(TObject *Sender) {
+	Fullscreen = !miMainFullscreen->Checked;
+}
+// ---------------------------------------------------------------------------
+
+void __fastcall TMain::FormKeyUp(TObject *Sender, WORD &Key, TShiftState Shift)
+{
+	if (Shift.Empty() && Key == VK_ESCAPE && Fullscreen) {
+		Fullscreen = false;
+	}
+}
+// ---------------------------------------------------------------------------
+
+void __fastcall TMain::miSeparator01Click(TObject *Sender) {
+	// TODO:
+	// Workaround: CPPWebBrowser перехватывает нажати€ кнопок и
+	// FormKeyUp не вызываетс€
+
+	if (Fullscreen) {
+		Fullscreen = false;
+	}
+}
+// ---------------------------------------------------------------------------

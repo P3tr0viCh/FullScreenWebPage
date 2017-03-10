@@ -25,6 +25,8 @@
 class TMain : public TForm, public IMouseMove {
 	bool _DisableHideCursor;
 
+	bool _Fullscreen;
+
 __published: // IDE-managed Components
 
 	TPopupMenu *PopupMenu;
@@ -33,6 +35,8 @@ __published: // IDE-managed Components
 	TMenuItem *miMainAbout;
 	TMenuItem *miSeparator01;
 	TTimer *TimerHideCursor;
+	TMenuItem *miMainFullscreen;
+	TMenuItem *miSeparator02;
 
 	void __fastcall miMainCloseClick(TObject *Sender);
 	void __fastcall FormCreate(TObject *Sender);
@@ -45,13 +49,28 @@ __published: // IDE-managed Components
 
 	void __fastcall CppWebBrowserDocumentComplete(TObject *Sender,
 		LPDISPATCH pDisp, Variant *URL);
+	void __fastcall miMainFullscreenClick(TObject *Sender);
+	void __fastcall FormKeyUp(TObject *Sender, WORD &Key, TShiftState Shift);
+	void __fastcall miSeparator01Click(TObject *Sender);
 
 private: // User declarations
 
-	void __fastcall SetDisableHideCursor(bool val);
+	static const FormEdges[][4];
+
+	static const int LeftEdge = 0;
+	static const int RightEdge = 1;
+	static const int TopEdge = 2;
+	static const int BottomEdge = 3;
+
+	void __fastcall SetDisableHideCursor(bool Value);
 	bool __fastcall GetDisableHideCursor();
 
+	void __fastcall SetFullscreen(bool Value);
+	bool __fastcall GetFullscreen();
+
 	TDocHandler *DocHandler;
+
+	bool CompatibleEdge;
 
 	void MouseMoveEvent();
 
@@ -63,6 +82,8 @@ public: // User declarations
 
 	__property bool DisableHideCursor = {
 		write = SetDisableHideCursor, read = GetDisableHideCursor};
+
+	__property bool Fullscreen = {write = SetFullscreen, read = GetFullscreen};
 };
 
 // ---------------------------------------------------------------------------

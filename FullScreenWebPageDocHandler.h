@@ -20,14 +20,19 @@ public:
 		m_PopupMenu = PopupMenu;
 	}
 
-	virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid,
-		void** ppv) {
-		if (riid == IID_IUnknown)
-			* ppv = (IUnknown*)this;
-		else if (riid == IID_IDocHostUIHandler)
-			* ppv = (IDocHostUIHandler*)this;
-		else
-			return E_NOINTERFACE;
+	virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppv) {
+		if (riid == IID_IUnknown) {
+			*ppv = (IUnknown*)this;
+		}
+		else {
+			if (riid == IID_IDocHostUIHandler) {
+				*ppv = (IDocHostUIHandler*)this;
+			}
+			else {
+				return E_NOINTERFACE;
+			}
+		}
+
 		return S_OK;
 	}
 
